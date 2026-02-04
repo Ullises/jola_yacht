@@ -1,0 +1,120 @@
+{
+  "project_name": "Jola Yacht - Luxury Boat Rental",
+  "design_philosophy": {
+    "theme": "Tropical Luxury (Light Mode)",
+    "core_values": ["Premium", "Adventurous", "Trustworthy", "Seamless"],
+    "visual_style": "Clean, airy, high-end editorial. Generous whitespace, glassmorphism overlays, and vivid imagery."
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Playfair Display, serif",
+      "body": "Manrope, sans-serif",
+      "accent": "La Belle Aurore, cursive"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-7xl font-bold tracking-tight leading-tight",
+      "h2": "text-4xl md:text-5xl font-semibold tracking-tight",
+      "h3": "text-2xl md:text-3xl font-medium",
+      "body": "text-base md:text-lg leading-relaxed text-muted-foreground",
+      "caption": "text-sm font-medium tracking-widest uppercase text-muted-foreground/80"
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#0F2C59",
+        "foreground": "#FFFFFF",
+        "description": "Deep Ocean Navy - Use for primary buttons, headers, and text emphasis."
+      },
+      "secondary": {
+        "DEFAULT": "#FF7F50",
+        "foreground": "#FFFFFF",
+        "description": "Sunset Coral - Use for CTAs, accents, and highlights."
+      },
+      "background": {
+        "DEFAULT": "#FFFFFF",
+        "alt": "#F8F9FA",
+        "dark": "#0F172A"
+      },
+      "success": {
+        "DEFAULT": "#10B981",
+        "description": "Emerald Green - Mandatory for confirmations and availability."
+      },
+      "surface": {
+        "glass": "rgba(255, 255, 255, 0.7)",
+        "glass_border": "rgba(255, 255, 255, 0.5)"
+      }
+    },
+    "gradients": {
+      "ocean_mist": "linear-gradient(180deg, rgba(15, 44, 89, 0) 0%, rgba(15, 44, 89, 0.05) 100%)",
+      "sunset_glow": "linear-gradient(90deg, #FF7F50 0%, #FF6B6B 100%)"
+    }
+  },
+  "layout_strategies": {
+    "container": "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8",
+    "spacing": {
+      "section_padding": "py-20 md:py-32",
+      "element_gap": "gap-6 md:gap-12"
+    },
+    "grid_system": {
+      "bento_marketing": "grid grid-cols-1 md:grid-cols-12 gap-8",
+      "cards_list": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 rounded-full px-8 py-6 text-lg font-medium transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1",
+      "secondary": "bg-white text-[#0F2C59] border border-[#0F2C59]/20 hover:border-[#0F2C59] rounded-full px-8 py-6 text-lg font-medium transition-all duration-300",
+      "accent": "bg-[#FF7F50] text-white hover:bg-[#FF7F50]/90 rounded-full px-8 py-6 text-lg font-medium shadow-lg hover:shadow-orange-500/25 transition-all duration-300"
+    },
+    "cards": {
+      "experience_card": "group relative overflow-hidden rounded-2xl bg-white shadow-sm hover:shadow-xl transition-all duration-500 border border-gray-100",
+      "glass_panel": "backdrop-blur-xl bg-white/70 border border-white/50 shadow-2xl rounded-3xl"
+    },
+    "inputs": {
+      "default": "h-12 rounded-xl border-gray-200 focus:border-[#0F2C59] focus:ring-[#0F2C59]/20 bg-white/50 backdrop-blur-sm"
+    }
+  },
+  "assets": {
+    "mandatory": {
+      "logo": "https://customer-assets.emergentagent.com/job_f2a5924b-a93c-4571-8a4d-3f1155f9659e/artifacts/tf809sz8_ChatGPT%20Image%20Dec%204%2C%202025%2C%2009_48_36%20PM.png",
+      "hero_bg": "https://customer-assets.emergentagent.com/job_f2a5924b-a93c-4571-8a4d-3f1155f9659e/artifacts/0yncz6fn_Gemini_Generated_Image_ww70wzww70wzww70.png"
+    },
+    "supplementary": {
+      "yacht_interior": "https://images.unsplash.com/photo-1697124510322-27ef594f67fd?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "snorkeling_action": "https://images.unsplash.com/photo-1560424729-e7519277b60d?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "sunset_mood": "https://images.unsplash.com/photo-1755855775864-c6723c194374?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "cancun_water": "https://images.unsplash.com/photo-1560424730-ec1c186a7573?crop=entropy&cs=srgb&fm=jpg&q=85"
+    }
+  },
+  "motion": {
+    "libraries": ["framer-motion", "lenis"],
+    "guidelines": {
+      "scroll": "Use Lenis for smooth momentum scrolling.",
+      "hover": "Cards should lift slightly (-4px) and cast a softer shadow.",
+      "transitions": "Use 'ease-out' curves (0.2s to 0.4s). Avoid linear transitions.",
+      "parallax": "Apply subtle parallax to the hero image and section backgrounds."
+    }
+  },
+  "accessibility": {
+    "contrast": "Ensure text on image backgrounds has a subtle gradient overlay or text-shadow.",
+    "focus_states": "Visible focus rings in primary blue color.",
+    "semantic_html": "Use <nav>, <main>, <section>, <article> tags correctly."
+  },
+  "instructions_to_main_agent": [
+    "1. SETUP: Install 'framer-motion', 'lucide-react', 'date-fns', 'react-day-picker' (for shadcn calendar).",
+    "2. COMPONENTS: Use Shadcn UI for the 'Booking Widget' (Calendar, Popover, Select). Customize them to match the 'Jola Blue' theme.",
+    "3. HERO SECTION: Implement the provided Hero Image with a 'Glassmorphism' booking widget floating on top (bottom-center or right-aligned).",
+    "4. CARDS: Build 'Viator-style' cards for experiences: Image on top (aspect-video), Title, Rating (Stars), Duration, and Price (in MXN) at the bottom.",
+    "5. FLEET: Create a horizontal scrollable list for the fleet. Each boat card should show capacity and 'Starting from' price.",
+    "6. FORMS: The reservation flow must be intuitive. Step 1: Select Experience/Boat. Step 2: Date & Time. Step 3: Guest Count. Step 4: Payment.",
+    "7. TESTING: Add 'data-testid' to all buttons, inputs, and cards.",
+    "8. FILE EXTENSIONS: Use .jsx for all React components."
+  ],
+  "universal_guidelines": [
+    "Do not use generic gradients. Use solid colors or subtle noise textures.",
+    "Avoid 'Inter' font for headings. Use 'Playfair Display'.",
+    "Ensure mobile responsiveness is prioritized (stack grids to 1 column on mobile).",
+    "Use 'sonner' for toast notifications (e.g., 'Booking Confirmed')."
+  ]
+}
