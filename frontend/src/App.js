@@ -1,53 +1,77 @@
-import { useEffect } from "react";
+import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import axios from "axios";
+import { Toaster } from "sonner";
+import { LanguageProvider } from "./context/LanguageContext";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+// Components
+import { Navbar } from "./components/Navbar";
+import { HeroSection } from "./components/HeroSection";
+import { ExperiencesSection } from "./components/ExperiencesSection";
+import { WhyUsSection } from "./components/WhyUsSection";
+import { FleetSection } from "./components/FleetSection";
+import { ReviewsSection } from "./components/ReviewsSection";
+import { FAQSection } from "./components/FAQSection";
+import { ContactSection } from "./components/ContactSection";
+import { Footer } from "./components/Footer";
+import { BookingPage } from "./components/BookingPage";
+import { PaymentSuccess, PaymentCancel } from "./components/PaymentPages";
+import { AdminLogin, AdminDashboard } from "./components/AdminDashboard";
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
+// Landing Page
+const LandingPage = () => {
   return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
+    <>
+      <Navbar />
+      <main>
+        <HeroSection />
+        <ExperiencesSection />
+        <WhyUsSection />
+        <FleetSection />
+        <ReviewsSection />
+        <FAQSection />
+        <ContactSection />
+      </main>
+      <Footer />
+    </>
   );
 };
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <LanguageProvider>
+      <div className="App">
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/" element={<LandingPage />} />
+            
+            {/* Booking Routes */}
+            <Route path="/booking/:experienceId" element={
+              <>
+                <Navbar />
+                <BookingPage />
+              </>
+            } />
+            <Route path="/booking/fleet/:fleetId" element={
+              <>
+                <Navbar />
+                <BookingPage />
+              </>
+            } />
+            
+            {/* Payment Routes */}
+            <Route path="/payment/success" element={<PaymentSuccess />} />
+            <Route path="/payment/cancel" element={<PaymentCancel />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          </Routes>
+        </BrowserRouter>
+        <Toaster position="top-center" richColors />
+      </div>
+    </LanguageProvider>
   );
 }
 
