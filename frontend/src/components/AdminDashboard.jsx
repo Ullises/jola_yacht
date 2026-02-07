@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { 
-  LayoutDashboard, Ship, Compass, MessageSquare, Calendar, Settings, 
-  LogOut, Plus, Edit, Trash2, Eye, Users, DollarSign, TrendingUp,
-  Menu, X, ChevronRight
+  LayoutDashboard, Ship, Compass, Calendar, 
+  LogOut, Plus, Edit, Trash2, Users, DollarSign, TrendingUp,
+  Menu, X, Save, ImagePlus
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
+import { Label } from './ui/label';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -109,6 +110,399 @@ export const AdminLogin = () => {
   );
 };
 
+// Experience Form Component
+const ExperienceForm = ({ experience, onSave, onCancel, language }) => {
+  const [formData, setFormData] = useState({
+    title_es: experience?.title_es || '',
+    title_en: experience?.title_en || '',
+    description_es: experience?.description_es || '',
+    description_en: experience?.description_en || '',
+    price: experience?.price || 0,
+    duration_minutes: experience?.duration_minutes || 60,
+    max_guests: experience?.max_guests || 10,
+    category: experience?.category || 'water_activity',
+    images: experience?.images?.join('\n') || '',
+    highlights_es: experience?.highlights_es?.join('\n') || '',
+    highlights_en: experience?.highlights_en?.join('\n') || ''
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    
+    const data = {
+      ...formData,
+      price: parseFloat(formData.price),
+      duration_minutes: parseInt(formData.duration_minutes),
+      max_guests: parseInt(formData.max_guests),
+      images: formData.images.split('\n').filter(url => url.trim()),
+      highlights_es: formData.highlights_es.split('\n').filter(h => h.trim()),
+      highlights_en: formData.highlights_en.split('\n').filter(h => h.trim())
+    };
+
+    try {
+      await onSave(data, experience?.id);
+      toast.success(language === 'es' ? 'Experiencia guardada' : 'Experience saved');
+    } catch (error) {
+      toast.error(language === 'es' ? 'Error al guardar' : 'Error saving');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Título (Español)' : 'Title (Spanish)'}</Label>
+          <Input
+            data-testid="exp-title-es"
+            value={formData.title_es}
+            onChange={(e) => setFormData({...formData, title_es: e.target.value})}
+            required
+            placeholder="Aventura en Moto Acuática"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Título (Inglés)' : 'Title (English)'}</Label>
+          <Input
+            data-testid="exp-title-en"
+            value={formData.title_en}
+            onChange={(e) => setFormData({...formData, title_en: e.target.value})}
+            required
+            placeholder="Jet Ski Adventure"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'Descripción (Español)' : 'Description (Spanish)'}</Label>
+        <Textarea
+          data-testid="exp-desc-es"
+          value={formData.description_es}
+          onChange={(e) => setFormData({...formData, description_es: e.target.value})}
+          required
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'Descripción (Inglés)' : 'Description (English)'}</Label>
+        <Textarea
+          data-testid="exp-desc-en"
+          value={formData.description_en}
+          onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+          required
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Precio (MXN)' : 'Price (MXN)'}</Label>
+          <Input
+            data-testid="exp-price"
+            type="number"
+            value={formData.price}
+            onChange={(e) => setFormData({...formData, price: e.target.value})}
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Duración (min)' : 'Duration (min)'}</Label>
+          <Input
+            data-testid="exp-duration"
+            type="number"
+            value={formData.duration_minutes}
+            onChange={(e) => setFormData({...formData, duration_minutes: e.target.value})}
+            required
+            min="1"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Máx. Huéspedes' : 'Max Guests'}</Label>
+          <Input
+            data-testid="exp-max-guests"
+            type="number"
+            value={formData.max_guests}
+            onChange={(e) => setFormData({...formData, max_guests: e.target.value})}
+            required
+            min="1"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'Categoría' : 'Category'}</Label>
+        <Select value={formData.category} onValueChange={(v) => setFormData({...formData, category: v})}>
+          <SelectTrigger data-testid="exp-category">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="water_activity">Water Activity</SelectItem>
+            <SelectItem value="adventure">Adventure</SelectItem>
+            <SelectItem value="eco_tour">Eco Tour</SelectItem>
+            <SelectItem value="luxury">Luxury</SelectItem>
+            <SelectItem value="rental">Rental</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'URLs de Imágenes (una por línea)' : 'Image URLs (one per line)'}</Label>
+        <Textarea
+          data-testid="exp-images"
+          value={formData.images}
+          onChange={(e) => setFormData({...formData, images: e.target.value})}
+          rows={2}
+          placeholder="https://images.unsplash.com/..."
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Destacados ES (uno por línea)' : 'Highlights ES (one per line)'}</Label>
+          <Textarea
+            data-testid="exp-highlights-es"
+            value={formData.highlights_es}
+            onChange={(e) => setFormData({...formData, highlights_es: e.target.value})}
+            rows={3}
+            placeholder="Cancelación gratuita&#10;2 horas&#10;Guía incluido"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Destacados EN (uno por línea)' : 'Highlights EN (one per line)'}</Label>
+          <Textarea
+            data-testid="exp-highlights-en"
+            value={formData.highlights_en}
+            onChange={(e) => setFormData({...formData, highlights_en: e.target.value})}
+            rows={3}
+            placeholder="Free cancellation&#10;2 hours&#10;Guide included"
+          />
+        </div>
+      </div>
+
+      <DialogFooter className="pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {language === 'es' ? 'Cancelar' : 'Cancel'}
+        </Button>
+        <Button type="submit" disabled={saving} className="bg-[#0F2C59] hover:bg-[#0a1f3d]">
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              {language === 'es' ? 'Guardando...' : 'Saving...'}
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              {language === 'es' ? 'Guardar' : 'Save'}
+            </span>
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
+// Fleet Form Component
+const FleetForm = ({ item, onSave, onCancel, language }) => {
+  const [formData, setFormData] = useState({
+    name: item?.name || '',
+    type: item?.type || 'jetski',
+    description_es: item?.description_es || '',
+    description_en: item?.description_en || '',
+    capacity: item?.capacity || 2,
+    price_per_hour: item?.price_per_hour || 0,
+    images: item?.images?.join('\n') || '',
+    amenities_es: item?.amenities_es?.join('\n') || '',
+    amenities_en: item?.amenities_en?.join('\n') || '',
+    specs: item?.specs ? Object.entries(item.specs).map(([k,v]) => `${k}:${v}`).join('\n') : ''
+  });
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    
+    // Parse specs from "key:value" format
+    const specsObj = {};
+    formData.specs.split('\n').filter(s => s.trim()).forEach(line => {
+      const [key, ...valueParts] = line.split(':');
+      if (key && valueParts.length) {
+        specsObj[key.trim()] = valueParts.join(':').trim();
+      }
+    });
+
+    const data = {
+      name: formData.name,
+      type: formData.type,
+      description_es: formData.description_es,
+      description_en: formData.description_en,
+      capacity: parseInt(formData.capacity),
+      price_per_hour: parseFloat(formData.price_per_hour),
+      images: formData.images.split('\n').filter(url => url.trim()),
+      amenities_es: formData.amenities_es.split('\n').filter(a => a.trim()),
+      amenities_en: formData.amenities_en.split('\n').filter(a => a.trim()),
+      specs: specsObj
+    };
+
+    try {
+      await onSave(data, item?.id);
+      toast.success(language === 'es' ? 'Embarcación guardada' : 'Fleet item saved');
+    } catch (error) {
+      toast.error(language === 'es' ? 'Error al guardar' : 'Error saving');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Nombre' : 'Name'}</Label>
+          <Input
+            data-testid="fleet-name"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            required
+            placeholder="Sea Ray 40"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Tipo' : 'Type'}</Label>
+          <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v})}>
+            <SelectTrigger data-testid="fleet-type">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="yacht">Yacht</SelectItem>
+              <SelectItem value="jetski">Jet Ski</SelectItem>
+              <SelectItem value="waverunner">WaveRunner</SelectItem>
+              <SelectItem value="boat">Boat</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'Descripción (Español)' : 'Description (Spanish)'}</Label>
+        <Textarea
+          data-testid="fleet-desc-es"
+          value={formData.description_es}
+          onChange={(e) => setFormData({...formData, description_es: e.target.value})}
+          required
+          rows={3}
+        />
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'Descripción (Inglés)' : 'Description (English)'}</Label>
+        <Textarea
+          data-testid="fleet-desc-en"
+          value={formData.description_en}
+          onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+          required
+          rows={3}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Capacidad (personas)' : 'Capacity (people)'}</Label>
+          <Input
+            data-testid="fleet-capacity"
+            type="number"
+            value={formData.capacity}
+            onChange={(e) => setFormData({...formData, capacity: e.target.value})}
+            required
+            min="1"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Precio por Hora (MXN)' : 'Price per Hour (MXN)'}</Label>
+          <Input
+            data-testid="fleet-price"
+            type="number"
+            value={formData.price_per_hour}
+            onChange={(e) => setFormData({...formData, price_per_hour: e.target.value})}
+            required
+            min="0"
+            step="0.01"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'URLs de Imágenes (una por línea)' : 'Image URLs (one per line)'}</Label>
+        <Textarea
+          data-testid="fleet-images"
+          value={formData.images}
+          onChange={(e) => setFormData({...formData, images: e.target.value})}
+          rows={2}
+          placeholder="https://images.unsplash.com/..."
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Amenidades ES (una por línea)' : 'Amenities ES (one per line)'}</Label>
+          <Textarea
+            data-testid="fleet-amenities-es"
+            value={formData.amenities_es}
+            onChange={(e) => setFormData({...formData, amenities_es: e.target.value})}
+            rows={3}
+            placeholder="Aire acondicionado&#10;Sistema de sonido&#10;Cocina"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Amenidades EN (una por línea)' : 'Amenities EN (one per line)'}</Label>
+          <Textarea
+            data-testid="fleet-amenities-en"
+            value={formData.amenities_en}
+            onChange={(e) => setFormData({...formData, amenities_en: e.target.value})}
+            rows={3}
+            placeholder="Air conditioning&#10;Sound system&#10;Kitchen"
+          />
+        </div>
+      </div>
+
+      <div>
+        <Label>{language === 'es' ? 'Especificaciones (clave:valor por línea)' : 'Specs (key:value per line)'}</Label>
+        <Textarea
+          data-testid="fleet-specs"
+          value={formData.specs}
+          onChange={(e) => setFormData({...formData, specs: e.target.value})}
+          rows={3}
+          placeholder="length:40 ft&#10;year:2022&#10;engine:Twin Mercury 350hp"
+        />
+      </div>
+
+      <DialogFooter className="pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {language === 'es' ? 'Cancelar' : 'Cancel'}
+        </Button>
+        <Button type="submit" disabled={saving} className="bg-[#0F2C59] hover:bg-[#0a1f3d]">
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              {language === 'es' ? 'Guardando...' : 'Saving...'}
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              {language === 'es' ? 'Guardar' : 'Save'}
+            </span>
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
 // Admin Dashboard Component
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -120,6 +514,13 @@ export const AdminDashboard = () => {
   const [experiences, setExperiences] = useState([]);
   const [fleet, setFleet] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Modal states
+  const [expModalOpen, setExpModalOpen] = useState(false);
+  const [fleetModalOpen, setFleetModalOpen] = useState(false);
+  const [editingExp, setEditingExp] = useState(null);
+  const [editingFleet, setEditingFleet] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const token = localStorage.getItem('admin_token');
 
@@ -170,6 +571,56 @@ export const AdminDashboard = () => {
       fetchData();
     } catch (error) {
       toast.error(language === 'es' ? 'Error al actualizar' : 'Update error');
+    }
+  };
+
+  // Experience CRUD
+  const saveExperience = async (data, id) => {
+    const headers = { Authorization: `Bearer ${token}` };
+    if (id) {
+      await axios.put(`${API}/admin/experiences/${id}`, data, { headers });
+    } else {
+      await axios.post(`${API}/admin/experiences`, data, { headers });
+    }
+    setExpModalOpen(false);
+    setEditingExp(null);
+    fetchData();
+  };
+
+  const deleteExperience = async (id) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`${API}/admin/experiences/${id}`, { headers });
+      toast.success(language === 'es' ? 'Experiencia eliminada' : 'Experience deleted');
+      setDeleteConfirm(null);
+      fetchData();
+    } catch (error) {
+      toast.error(language === 'es' ? 'Error al eliminar' : 'Error deleting');
+    }
+  };
+
+  // Fleet CRUD
+  const saveFleet = async (data, id) => {
+    const headers = { Authorization: `Bearer ${token}` };
+    if (id) {
+      await axios.put(`${API}/admin/fleet/${id}`, data, { headers });
+    } else {
+      await axios.post(`${API}/admin/fleet`, data, { headers });
+    }
+    setFleetModalOpen(false);
+    setEditingFleet(null);
+    fetchData();
+  };
+
+  const deleteFleet = async (id) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`${API}/admin/fleet/${id}`, { headers });
+      toast.success(language === 'es' ? 'Embarcación eliminada' : 'Fleet item deleted');
+      setDeleteConfirm(null);
+      fetchData();
+    } catch (error) {
+      toast.error(language === 'es' ? 'Error al eliminar' : 'Error deleting');
     }
   };
 
@@ -308,7 +759,7 @@ export const AdminDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {reservations.slice(0, 5).map((res, index) => (
+                    {reservations.slice(0, 5).map((res) => (
                       <tr key={res.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <p className="font-medium text-[#0F2C59]">{res.customer_name}</p>
@@ -391,27 +842,75 @@ export const AdminDashboard = () => {
               <h1 className="text-2xl font-bold text-[#0F2C59]">
                 {language === 'es' ? 'Experiencias' : 'Experiences'}
               </h1>
+              <Button
+                onClick={() => { setEditingExp(null); setExpModalOpen(true); }}
+                data-testid="add-experience-btn"
+                className="bg-[#10B981] hover:bg-[#059669] text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {language === 'es' ? 'Nueva Experiencia' : 'New Experience'}
+              </Button>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {experiences.map((exp) => (
-                <div key={exp.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <img 
-                    src={exp.images?.[0] || 'https://via.placeholder.com/400x200'} 
-                    alt={exp.title_es}
-                    className="w-full h-40 object-cover"
-                  />
+                <div key={exp.id} className="bg-white rounded-2xl shadow-sm overflow-hidden group">
+                  <div className="relative">
+                    <img 
+                      src={exp.images?.[0] || 'https://via.placeholder.com/400x200'} 
+                      alt={exp.title_es}
+                      className="w-full h-40 object-cover"
+                    />
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => { setEditingExp(exp); setExpModalOpen(true); }}
+                        data-testid={`edit-exp-${exp.id}`}
+                        className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+                      >
+                        <Edit className="w-4 h-4 text-[#0F2C59]" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm({ type: 'experience', id: exp.id, name: exp.title_es })}
+                        data-testid={`delete-exp-${exp.id}`}
+                        className="p-2 bg-white rounded-full shadow-md hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-[#0F2C59] mb-2">{exp.title_es}</h3>
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">{exp.description_es}</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-[#0F2C59]">${exp.price.toLocaleString()} MXN</span>
-                      <Badge className="bg-green-100 text-green-800">{exp.is_active ? 'Active' : 'Inactive'}</Badge>
+                      <span className="text-lg font-bold text-[#0F2C59]">${exp.price?.toLocaleString()} MXN</span>
+                      <Badge className={exp.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                        {exp.is_active ? 'Active' : 'Inactive'}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Experience Modal */}
+            <Dialog open={expModalOpen} onOpenChange={setExpModalOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingExp 
+                      ? (language === 'es' ? 'Editar Experiencia' : 'Edit Experience')
+                      : (language === 'es' ? 'Nueva Experiencia' : 'New Experience')
+                    }
+                  </DialogTitle>
+                </DialogHeader>
+                <ExperienceForm
+                  experience={editingExp}
+                  onSave={saveExperience}
+                  onCancel={() => { setExpModalOpen(false); setEditingExp(null); }}
+                  language={language}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         )}
 
@@ -422,21 +921,47 @@ export const AdminDashboard = () => {
               <h1 className="text-2xl font-bold text-[#0F2C59]">
                 {language === 'es' ? 'Flota' : 'Fleet'}
               </h1>
+              <Button
+                onClick={() => { setEditingFleet(null); setFleetModalOpen(true); }}
+                data-testid="add-fleet-btn"
+                className="bg-[#10B981] hover:bg-[#059669] text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {language === 'es' ? 'Nueva Embarcación' : 'New Vessel'}
+              </Button>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {fleet.map((item) => (
-                <div key={item.id} className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <img 
-                    src={item.images?.[0] || 'https://via.placeholder.com/400x200'} 
-                    alt={item.name}
-                    className="w-full h-40 object-cover"
-                  />
+                <div key={item.id} className="bg-white rounded-2xl shadow-sm overflow-hidden group">
+                  <div className="relative">
+                    <img 
+                      src={item.images?.[0] || 'https://via.placeholder.com/400x200'} 
+                      alt={item.name}
+                      className="w-full h-40 object-cover"
+                    />
+                    <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => { setEditingFleet(item); setFleetModalOpen(true); }}
+                        data-testid={`edit-fleet-${item.id}`}
+                        className="p-2 bg-white rounded-full shadow-md hover:bg-gray-100"
+                      >
+                        <Edit className="w-4 h-4 text-[#0F2C59]" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirm({ type: 'fleet', id: item.id, name: item.name })}
+                        data-testid={`delete-fleet-${item.id}`}
+                        className="p-2 bg-white rounded-full shadow-md hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
                   <div className="p-4">
                     <h3 className="font-semibold text-[#0F2C59] mb-1">{item.name}</h3>
                     <p className="text-sm text-gray-500 mb-3">{item.type} • {item.capacity} personas</p>
                     <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-[#0F2C59]">${item.price_per_hour.toLocaleString()}/hr</span>
+                      <span className="text-lg font-bold text-[#0F2C59]">${item.price_per_hour?.toLocaleString()}/hr</span>
                       <Badge className={item.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}>
                         {item.is_available ? 'Available' : 'Unavailable'}
                       </Badge>
@@ -445,8 +970,62 @@ export const AdminDashboard = () => {
                 </div>
               ))}
             </div>
+
+            {/* Fleet Modal */}
+            <Dialog open={fleetModalOpen} onOpenChange={setFleetModalOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingFleet 
+                      ? (language === 'es' ? 'Editar Embarcación' : 'Edit Vessel')
+                      : (language === 'es' ? 'Nueva Embarcación' : 'New Vessel')
+                    }
+                  </DialogTitle>
+                </DialogHeader>
+                <FleetForm
+                  item={editingFleet}
+                  onSave={saveFleet}
+                  onCancel={() => { setFleetModalOpen(false); setEditingFleet(null); }}
+                  language={language}
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {language === 'es' ? 'Confirmar Eliminación' : 'Confirm Delete'}
+              </DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600">
+              {language === 'es' 
+                ? `¿Estás seguro de eliminar "${deleteConfirm?.name}"?`
+                : `Are you sure you want to delete "${deleteConfirm?.name}"?`
+              }
+            </p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteConfirm(null)}>
+                {language === 'es' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button
+                className="bg-red-500 hover:bg-red-600 text-white"
+                onClick={() => {
+                  if (deleteConfirm?.type === 'experience') {
+                    deleteExperience(deleteConfirm.id);
+                  } else {
+                    deleteFleet(deleteConfirm.id);
+                  }
+                }}
+              >
+                {language === 'es' ? 'Eliminar' : 'Delete'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
