@@ -6,8 +6,9 @@ import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
 
-const WHATSAPP_NUMBER = '529981234567'; // Placeholder
-const EMAIL = 'info@jolayacht.com';
+const WHATSAPP_NUMBER = '529988203360';
+const DISPLAY_WHATSAPP_NUMBER = '+52 998 820 3360';
+const EMAILS = ['info@jolayacht.com', 'geovani_mis@live.com'];
 const ADDRESS = 'Blvd. Kukulcan Km 5.8, Kukulcan Boulevard, Zona Hotelera, 77500 Cancún, Q.R.';
 
 export const ContactSection = () => {
@@ -81,13 +82,13 @@ export const ContactSection = () => {
                 </div>
                 <div>
                   <p className="font-semibold text-[#0F2C59]">{t('contact.whatsapp')}</p>
-                  <p className="text-sm text-gray-600">+52 998 123 4567</p>
+                  <p className="text-sm text-gray-600">{DISPLAY_WHATSAPP_NUMBER}</p>
                 </div>
               </button>
 
               {/* Email */}
               <a
-                href={`mailto:${EMAIL}`}
+                href={`mailto:${EMAILS.join(',')}`}
                 data-testid="email-link"
                 className="flex items-center gap-4 p-5 bg-[#0F2C59]/10 rounded-2xl hover:bg-[#0F2C59]/20 transition-colors"
               >
@@ -96,7 +97,8 @@ export const ContactSection = () => {
                 </div>
                 <div>
                   <p className="font-semibold text-[#0F2C59]">{t('contact.email')}</p>
-                  <p className="text-sm text-gray-600">{EMAIL}</p>
+                  <p className="text-sm text-gray-600">{EMAILS[0]}</p>
+                  <p className="text-sm text-gray-600">{EMAILS[1]}</p>
                 </div>
               </a>
 
