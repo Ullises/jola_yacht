@@ -904,11 +904,48 @@ export const AdminDashboard = () => {
     }
   };
 
+  // Promotion CRUD
+  const savePromotion = async (data, id) => {
+    const headers = { Authorization: `Bearer ${token}` };
+    if (id) {
+      await axios.put(`${API}/admin/promotions/${id}`, data, { headers });
+    } else {
+      await axios.post(`${API}/admin/promotions`, data, { headers });
+    }
+    setPromoModalOpen(false);
+    setEditingPromo(null);
+    fetchData();
+  };
+
+  const deletePromotion = async (id) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.delete(`${API}/admin/promotions/${id}`, { headers });
+      toast.success(language === 'es' ? 'Promoción eliminada' : 'Promotion deleted');
+      setDeleteConfirm(null);
+      fetchData();
+    } catch (error) {
+      toast.error(language === 'es' ? 'Error al eliminar' : 'Error deleting');
+    }
+  };
+
+  const togglePromotion = async (id) => {
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      await axios.put(`${API}/admin/promotions/${id}/toggle`, {}, { headers });
+      toast.success(language === 'es' ? 'Estado actualizado' : 'Status updated');
+      fetchData();
+    } catch (error) {
+      toast.error(language === 'es' ? 'Error al actualizar' : 'Error updating');
+    }
+  };
+
   const sidebarItems = [
     { id: 'overview', icon: LayoutDashboard, label: language === 'es' ? 'Resumen' : 'Overview' },
     { id: 'reservations', icon: Calendar, label: language === 'es' ? 'Reservaciones' : 'Reservations' },
     { id: 'experiences', icon: Compass, label: language === 'es' ? 'Experiencias' : 'Experiences' },
     { id: 'fleet', icon: Ship, label: language === 'es' ? 'Flota' : 'Fleet' },
+    { id: 'promotions', icon: Tag, label: language === 'es' ? 'Promociones' : 'Promotions' },
   ];
 
   const getStatusColor = (status) => {
