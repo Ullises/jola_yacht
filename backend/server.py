@@ -114,7 +114,11 @@ class Reservation(BaseModel):
     date: str
     time_slot: str
     guests: int
+    original_price: float = 0
+    discount_amount: float = 0
     total_price: float
+    promo_code: Optional[str] = None
+    promotion_id: Optional[str] = None
     add_ons: List[str] = []
     status: str = "pending"  # pending, confirmed, cancelled, completed
     payment_status: str = "pending"  # pending, paid, refunded
@@ -131,6 +135,7 @@ class ReservationCreate(BaseModel):
     date: str
     time_slot: str
     guests: int
+    promo_code: Optional[str] = None
     add_ons: List[str] = []
     notes: Optional[str] = None
 
