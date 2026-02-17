@@ -862,6 +862,62 @@ async def get_admin_stats(admin=Depends(get_current_admin)):
         "total_fleet": total_fleet
     }
 
+# Admin Promotions
+@api_router.get("/admin/promotions", response_model=List[Promotion])
+async def get_all_promotions(admin=Depends(get_current_admin)):
+    promotions = await db.promotions.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    for promo in promotions:
+        if isinstance(promo.get('created_at'), str):
+            promo['created_at'] = datetime.fromisoformat(promo['created_at'])
+    return promotions
+
+@api_router.post("/admin/promotions", response_model=Promotion)
+async def create_promotion(promo: PromotionCreate, admin=Depends(get_current_admin)):
+    promo_data = promo.model_dump()
+    # Uppercase the promo code if provided
+    if promo_data.get('promo_code'):
+        promo_data['promo_code'] = promo_data['promo_code'].upper()
+    
+    promo_obj = Promotion(**promo_data)
+    doc = promo_obj.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.promotions.insert_one(doc)
+    return promo_obj
+
+@api_router.put("/admin/promotions/{promo_id}", response_model=Promotion)
+async def update_promotion(promo_id: str, promo: PromotionCreate, admin=Depends(get_current_admin)):
+    existing = await db.promotions.find_one({"id": promo_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Promotion not found")
+    
+    update_data = promo.model_dump()
+    if update_data.get('promo_code'):
+        update_data['promo_code'] = update_data['promo_code'].upper()
+    
+    await db.promotions.update_one({"id": promo_id}, {"$set": update_data})
+    
+    updated = await db.promotions.find_one({"id": promo_id}, {"_id": 0})
+    if isinstance(updated.get('created_at'), str):
+        updated['created_at'] = datetime.fromisoformat(updated['created_at'])
+    return updated
+
+@api_router.delete("/admin/promotions/{promo_id}")
+async def delete_promotion(promo_id: str, admin=Depends(get_current_admin)):
+    result = await db.promotions.delete_one({"id": promo_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Promotion not found")
+    return {"status": "deleted"}
+
+@api_router.put("/admin/promotions/{promo_id}/toggle")
+async def toggle_promotion(promo_id: str, admin=Depends(get_current_admin)):
+    promo = await db.promotions.find_one({"id": promo_id}, {"_id": 0})
+    if not promo:
+        raise HTTPException(status_code=404, detail="Promotion not found")
+    
+    new_status = not promo.get('is_active', True)
+    await db.promotions.update_one({"id": promo_id}, {"$set": {"is_active": new_status}})
+    return {"status": "toggled", "is_active": new_status}
+
 # ==================== SEED DATA ====================
 
 @api_router.post("/seed")
