@@ -504,6 +504,280 @@ const FleetForm = ({ item, onSave, onCancel, language }) => {
   );
 };
 
+// Promotion Form Component
+const PromotionForm = ({ promotion, onSave, onCancel, language }) => {
+  const [formData, setFormData] = useState({
+    name_es: promotion?.name_es || '',
+    name_en: promotion?.name_en || '',
+    description_es: promotion?.description_es || '',
+    description_en: promotion?.description_en || '',
+    discount_type: promotion?.discount_type || 'percentage',
+    discount_value: promotion?.discount_value || 10,
+    promo_code: promotion?.promo_code || '',
+    season_type: promotion?.season_type || 'custom',
+    holiday_name: promotion?.holiday_name || '',
+    start_date: promotion?.start_date || '',
+    end_date: promotion?.end_date || '',
+    applies_to: promotion?.applies_to || 'all',
+    min_guests: promotion?.min_guests || 1,
+    min_purchase: promotion?.min_purchase || 0,
+    max_uses: promotion?.max_uses || '',
+    badge_color: promotion?.badge_color || '#FF7F50'
+  });
+  const [saving, setSaving] = useState(false);
+
+  const holidayOptions = [
+    { value: 'valentine', label: language === 'es' ? 'San Valentín' : "Valentine's Day" },
+    { value: 'easter', label: language === 'es' ? 'Semana Santa' : 'Easter' },
+    { value: 'spring_break', label: 'Spring Break' },
+    { value: 'summer', label: language === 'es' ? 'Verano' : 'Summer' },
+    { value: 'halloween', label: 'Halloween' },
+    { value: 'thanksgiving', label: language === 'es' ? 'Día de Gracias' : 'Thanksgiving' },
+    { value: 'christmas', label: language === 'es' ? 'Navidad' : 'Christmas' },
+    { value: 'new_year', label: language === 'es' ? 'Año Nuevo' : 'New Year' },
+    { value: 'independence', label: language === 'es' ? 'Independencia' : 'Independence Day' }
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    
+    const data = {
+      ...formData,
+      discount_value: parseFloat(formData.discount_value),
+      min_guests: parseInt(formData.min_guests),
+      min_purchase: parseFloat(formData.min_purchase),
+      max_uses: formData.max_uses ? parseInt(formData.max_uses) : null,
+      promo_code: formData.promo_code || null,
+      holiday_name: formData.holiday_name || null
+    };
+
+    try {
+      await onSave(data, promotion?.id);
+      toast.success(language === 'es' ? 'Promoción guardada' : 'Promotion saved');
+    } catch (error) {
+      toast.error(language === 'es' ? 'Error al guardar' : 'Error saving');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Nombre (Español)' : 'Name (Spanish)'}</Label>
+          <Input
+            data-testid="promo-name-es"
+            value={formData.name_es}
+            onChange={(e) => setFormData({...formData, name_es: e.target.value})}
+            required
+            placeholder="San Valentín Especial"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Nombre (Inglés)' : 'Name (English)'}</Label>
+          <Input
+            data-testid="promo-name-en"
+            value={formData.name_en}
+            onChange={(e) => setFormData({...formData, name_en: e.target.value})}
+            required
+            placeholder="Valentine's Special"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Descripción (Español)' : 'Description (Spanish)'}</Label>
+          <Textarea
+            value={formData.description_es}
+            onChange={(e) => setFormData({...formData, description_es: e.target.value})}
+            required
+            rows={2}
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Descripción (Inglés)' : 'Description (English)'}</Label>
+          <Textarea
+            value={formData.description_en}
+            onChange={(e) => setFormData({...formData, description_en: e.target.value})}
+            required
+            rows={2}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Tipo de Descuento' : 'Discount Type'}</Label>
+          <Select value={formData.discount_type} onValueChange={(v) => setFormData({...formData, discount_type: v})}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="percentage">{language === 'es' ? 'Porcentaje' : 'Percentage'}</SelectItem>
+              <SelectItem value="fixed_amount">{language === 'es' ? 'Monto Fijo' : 'Fixed Amount'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>{formData.discount_type === 'percentage' ? '%' : 'MXN'}</Label>
+          <Input
+            type="number"
+            value={formData.discount_value}
+            onChange={(e) => setFormData({...formData, discount_value: e.target.value})}
+            required
+            min="0"
+            max={formData.discount_type === 'percentage' ? '100' : undefined}
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Código Promo (opcional)' : 'Promo Code (optional)'}</Label>
+          <Input
+            value={formData.promo_code}
+            onChange={(e) => setFormData({...formData, promo_code: e.target.value.toUpperCase()})}
+            placeholder="SUMMER25"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Tipo de Temporada' : 'Season Type'}</Label>
+          <Select value={formData.season_type} onValueChange={(v) => setFormData({...formData, season_type: v})}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="holiday">{language === 'es' ? 'Día Festivo' : 'Holiday'}</SelectItem>
+              <SelectItem value="seasonal">{language === 'es' ? 'Temporada' : 'Seasonal'}</SelectItem>
+              <SelectItem value="weekend">{language === 'es' ? 'Fin de Semana' : 'Weekend'}</SelectItem>
+              <SelectItem value="custom">{language === 'es' ? 'Personalizado' : 'Custom'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Festivo/Temporada' : 'Holiday/Season'}</Label>
+          <Select value={formData.holiday_name || ''} onValueChange={(v) => setFormData({...formData, holiday_name: v})}>
+            <SelectTrigger>
+              <SelectValue placeholder={language === 'es' ? 'Seleccionar...' : 'Select...'} />
+            </SelectTrigger>
+            <SelectContent>
+              {holidayOptions.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Fecha Inicio' : 'Start Date'}</Label>
+          <Input
+            type="date"
+            value={formData.start_date}
+            onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+            required
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Fecha Fin' : 'End Date'}</Label>
+          <Input
+            type="date"
+            value={formData.end_date}
+            onChange={(e) => setFormData({...formData, end_date: e.target.value})}
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Aplica a' : 'Applies To'}</Label>
+          <Select value={formData.applies_to} onValueChange={(v) => setFormData({...formData, applies_to: v})}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{language === 'es' ? 'Todo' : 'All'}</SelectItem>
+              <SelectItem value="experiences">{language === 'es' ? 'Experiencias' : 'Experiences'}</SelectItem>
+              <SelectItem value="fleet">{language === 'es' ? 'Flota' : 'Fleet'}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Color del Badge' : 'Badge Color'}</Label>
+          <div className="flex gap-2">
+            <Input
+              type="color"
+              value={formData.badge_color}
+              onChange={(e) => setFormData({...formData, badge_color: e.target.value})}
+              className="w-16 h-10 p-1"
+            />
+            <Input
+              value={formData.badge_color}
+              onChange={(e) => setFormData({...formData, badge_color: e.target.value})}
+              className="flex-1"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label>{language === 'es' ? 'Mín. Huéspedes' : 'Min. Guests'}</Label>
+          <Input
+            type="number"
+            value={formData.min_guests}
+            onChange={(e) => setFormData({...formData, min_guests: e.target.value})}
+            min="1"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Mín. Compra (MXN)' : 'Min. Purchase (MXN)'}</Label>
+          <Input
+            type="number"
+            value={formData.min_purchase}
+            onChange={(e) => setFormData({...formData, min_purchase: e.target.value})}
+            min="0"
+          />
+        </div>
+        <div>
+          <Label>{language === 'es' ? 'Máx. Usos (vacío = ilimitado)' : 'Max. Uses (empty = unlimited)'}</Label>
+          <Input
+            type="number"
+            value={formData.max_uses}
+            onChange={(e) => setFormData({...formData, max_uses: e.target.value})}
+            min="1"
+            placeholder="∞"
+          />
+        </div>
+      </div>
+
+      <DialogFooter className="pt-4">
+        <Button type="button" variant="outline" onClick={onCancel}>
+          {language === 'es' ? 'Cancelar' : 'Cancel'}
+        </Button>
+        <Button type="submit" disabled={saving} className="bg-[#10B981] hover:bg-[#059669]">
+          {saving ? (
+            <span className="flex items-center gap-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              {language === 'es' ? 'Guardando...' : 'Saving...'}
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <Save className="w-4 h-4" />
+              {language === 'es' ? 'Guardar' : 'Save'}
+            </span>
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
+};
+
 // Admin Dashboard Component
 export const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -514,13 +788,16 @@ export const AdminDashboard = () => {
   const [reservations, setReservations] = useState([]);
   const [experiences, setExperiences] = useState([]);
   const [fleet, setFleet] = useState([]);
+  const [promotions, setPromotions] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Modal states
   const [expModalOpen, setExpModalOpen] = useState(false);
   const [fleetModalOpen, setFleetModalOpen] = useState(false);
+  const [promoModalOpen, setPromoModalOpen] = useState(false);
   const [editingExp, setEditingExp] = useState(null);
   const [editingFleet, setEditingFleet] = useState(null);
+  const [editingPromo, setEditingPromo] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const token = localStorage.getItem('admin_token');
@@ -537,17 +814,19 @@ export const AdminDashboard = () => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       
-      const [statsRes, resRes, expRes, fleetRes] = await Promise.all([
+      const [statsRes, resRes, expRes, fleetRes, promoRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers }),
         axios.get(`${API}/admin/reservations`, { headers }),
         axios.get(`${API}/experiences`),
-        axios.get(`${API}/fleet`)
+        axios.get(`${API}/fleet`),
+        axios.get(`${API}/admin/promotions`, { headers })
       ]);
 
       setStats(statsRes.data);
       setReservations(resRes.data);
       setExperiences(expRes.data);
       setFleet(fleetRes.data);
+      setPromotions(promoRes.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       if (error.response?.status === 401) {
