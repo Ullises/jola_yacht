@@ -91,11 +91,15 @@ export const Footer = () => {
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-[#FF7F50] flex-shrink-0" />
-                <span className="text-white/70 text-sm">+52 998 123 4567</span>
+                <span className="text-white/70 text-sm">+52 998 820 3360</span>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-[#FF7F50] flex-shrink-0" />
                 <span className="text-white/70 text-sm">info@jolayacht.com</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-[#FF7F50] flex-shrink-0" />
+                <span className="text-white/70 text-sm">geovani_mis@live.com</span>
               </li>
             </ul>
           </div>
