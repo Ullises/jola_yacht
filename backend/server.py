@@ -1178,7 +1178,128 @@ async def seed_data():
     
     await db.faqs.insert_many(faqs)
     
-    return {"message": "Data seeded successfully", "experiences": len(experiences), "fleet": len(fleet_items), "reviews": len(reviews), "faqs": len(faqs)}
+    # Seed Promotions
+    promotions = [
+        {
+            "id": str(uuid.uuid4()),
+            "name_es": "San Valentín - Crucero Romántico",
+            "name_en": "Valentine's Day - Romantic Cruise",
+            "description_es": "Celebra el amor con un 20% de descuento en todos nuestros cruceros al atardecer durante febrero.",
+            "description_en": "Celebrate love with 20% off all sunset cruises during February.",
+            "discount_type": "percentage",
+            "discount_value": 20,
+            "promo_code": None,
+            "season_type": "holiday",
+            "holiday_name": "valentine",
+            "start_date": "2025-02-01",
+            "end_date": "2025-02-28",
+            "applies_to": "all",
+            "specific_items": [],
+            "min_guests": 2,
+            "min_purchase": 0,
+            "max_uses": None,
+            "current_uses": 0,
+            "is_active": True,
+            "badge_color": "#E91E63",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name_es": "Spring Break Fiesta",
+            "name_en": "Spring Break Fiesta",
+            "description_es": "¡Es temporada de Spring Break! 15% de descuento en todas las motos acuáticas.",
+            "description_en": "It's Spring Break season! 15% off all jet skis.",
+            "discount_type": "percentage",
+            "discount_value": 15,
+            "promo_code": "SPRING25",
+            "season_type": "seasonal",
+            "holiday_name": "spring_break",
+            "start_date": "2025-03-01",
+            "end_date": "2025-04-15",
+            "applies_to": "fleet",
+            "specific_items": [],
+            "min_guests": 1,
+            "min_purchase": 0,
+            "max_uses": 100,
+            "current_uses": 0,
+            "is_active": True,
+            "badge_color": "#4CAF50",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name_es": "Verano en Cancún",
+            "name_en": "Cancun Summer",
+            "description_es": "Temporada alta de verano - 10% de descuento en reservas de grupos de 4+",
+            "description_en": "Summer high season - 10% off for groups of 4+",
+            "discount_type": "percentage",
+            "discount_value": 10,
+            "promo_code": None,
+            "season_type": "seasonal",
+            "holiday_name": "summer",
+            "start_date": "2025-06-01",
+            "end_date": "2025-08-31",
+            "applies_to": "all",
+            "specific_items": [],
+            "min_guests": 4,
+            "min_purchase": 0,
+            "max_uses": None,
+            "current_uses": 0,
+            "is_active": True,
+            "badge_color": "#FF9800",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name_es": "Navidad y Año Nuevo",
+            "name_en": "Christmas & New Year",
+            "description_es": "Celebra las fiestas en el mar - $500 MXN de descuento en yates",
+            "description_en": "Celebrate the holidays at sea - $500 MXN off yacht rentals",
+            "discount_type": "fixed_amount",
+            "discount_value": 500,
+            "promo_code": "XMAS2025",
+            "season_type": "holiday",
+            "holiday_name": "christmas",
+            "start_date": "2025-12-15",
+            "end_date": "2026-01-06",
+            "applies_to": "fleet",
+            "specific_items": [],
+            "min_guests": 1,
+            "min_purchase": 3000,
+            "max_uses": 50,
+            "current_uses": 0,
+            "is_active": True,
+            "badge_color": "#C62828",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name_es": "Semana Santa Especial",
+            "name_en": "Easter Week Special",
+            "description_es": "Semana Santa en el Caribe - 25% de descuento en experiencias familiares",
+            "description_en": "Easter Week in the Caribbean - 25% off family experiences",
+            "discount_type": "percentage",
+            "discount_value": 25,
+            "promo_code": None,
+            "season_type": "holiday",
+            "holiday_name": "easter",
+            "start_date": "2025-04-13",
+            "end_date": "2025-04-20",
+            "applies_to": "experiences",
+            "specific_items": [],
+            "min_guests": 3,
+            "min_purchase": 0,
+            "max_uses": None,
+            "current_uses": 0,
+            "is_active": True,
+            "badge_color": "#9C27B0",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    ]
+    
+    await db.promotions.insert_many(promotions)
+    
+    return {"message": "Data seeded successfully", "experiences": len(experiences), "fleet": len(fleet_items), "reviews": len(reviews), "faqs": len(faqs), "promotions": len(promotions)}
 
 # Include the router in the main app
 app.include_router(api_router)
