@@ -278,6 +278,48 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
+async def get_active_promotions_for_date(date_str: str, item_type: str = None, item_id: str = None):
+    """Get all active promotions that apply to a specific date and optionally an item"""
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d') if not date_str else date_str
+    
+    query = {
+        "is_active": True,
+        "start_date": {"$lte": today},
+        "end_date": {"$gte": today}
+    }
+    
+    promotions = await db.promotions.find(query, {"_id": 0}).to_list(100)
+    
+    applicable = []
+    for promo in promotions:
+        # Check max uses
+        if promo.get('max_uses') and promo.get('current_uses', 0) >= promo['max_uses']:
+            continue
+        
+        # Check if applies to this item type
+        applies_to = promo.get('applies_to', 'all')
+        if applies_to == 'all':
+            applicable.append(promo)
+        elif applies_to == item_type:
+            applicable.append(promo)
+        elif applies_to == 'specific' and item_id in promo.get('specific_items', []):
+            applicable.append(promo)
+    
+    return applicable
+
+def calculate_discounted_price(original_price: float, promotion: dict) -> tuple:
+    """Calculate discounted price based on promotion. Returns (discounted_price, discount_amount)"""
+    discount_type = promotion.get('discount_type', 'percentage')
+    discount_value = promotion.get('discount_value', 0)
+    
+    if discount_type == 'percentage':
+        discount_amount = original_price * (discount_value / 100)
+    else:  # fixed_amount
+        discount_amount = min(discount_value, original_price)
+    
+    discounted_price = max(0, original_price - discount_amount)
+    return (discounted_price, discount_amount)
+
 # ==================== PUBLIC ROUTES ====================
 
 @api_router.get("/")
