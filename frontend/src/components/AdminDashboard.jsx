@@ -1310,6 +1310,120 @@ export const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Promotions Tab */}
+        {activeTab === 'promotions' && (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h1 className="text-2xl font-bold text-[#0F2C59]">
+                {language === 'es' ? 'Promociones' : 'Promotions'}
+              </h1>
+              <Button
+                onClick={() => { setEditingPromo(null); setPromoModalOpen(true); }}
+                data-testid="add-promo-btn"
+                className="bg-[#10B981] hover:bg-[#059669] text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                {language === 'es' ? 'Nueva Promoción' : 'New Promotion'}
+              </Button>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {promotions.map((promo) => (
+                <div key={promo.id} className="bg-white rounded-2xl shadow-sm overflow-hidden group">
+                  <div className="p-5 border-b" style={{ borderColor: promo.badge_color + '30' }}>
+                    <div className="flex items-start justify-between mb-3">
+                      <div 
+                        className="px-3 py-1 rounded-full text-sm font-medium text-white"
+                        style={{ backgroundColor: promo.badge_color }}
+                      >
+                        {promo.discount_type === 'percentage' 
+                          ? `${promo.discount_value}% OFF` 
+                          : `$${promo.discount_value} OFF`
+                        }
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => togglePromotion(promo.id)}
+                          className={`p-2 rounded-full transition-colors ${promo.is_active ? 'bg-green-100 hover:bg-green-200' : 'bg-gray-100 hover:bg-gray-200'}`}
+                        >
+                          <Power className={`w-4 h-4 ${promo.is_active ? 'text-green-600' : 'text-gray-400'}`} />
+                        </button>
+                      </div>
+                    </div>
+                    <h3 className="font-bold text-[#0F2C59] text-lg mb-1">
+                      {language === 'es' ? promo.name_es : promo.name_en}
+                    </h3>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {language === 'es' ? promo.description_es : promo.description_en}
+                    </p>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">{language === 'es' ? 'Vigencia' : 'Valid'}</span>
+                      <span className="font-medium">{promo.start_date} → {promo.end_date}</span>
+                    </div>
+                    {promo.promo_code && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{language === 'es' ? 'Código' : 'Code'}</span>
+                        <code className="bg-gray-100 px-2 py-1 rounded font-mono text-sm">{promo.promo_code}</code>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">{language === 'es' ? 'Aplica a' : 'Applies to'}</span>
+                      <Badge className="bg-blue-100 text-blue-800">{promo.applies_to}</Badge>
+                    </div>
+                    {promo.max_uses && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">{language === 'es' ? 'Usos' : 'Uses'}</span>
+                        <span>{promo.current_uses || 0} / {promo.max_uses}</span>
+                      </div>
+                    )}
+                    <div className="flex gap-2 pt-2">
+                      <Button
+                        onClick={() => { setEditingPromo(promo); setPromoModalOpen(true); }}
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        {language === 'es' ? 'Editar' : 'Edit'}
+                      </Button>
+                      <Button
+                        onClick={() => setDeleteConfirm({ type: 'promotion', id: promo.id, name: promo.name_es })}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Promotion Modal */}
+            <Dialog open={promoModalOpen} onOpenChange={setPromoModalOpen}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingPromo 
+                      ? (language === 'es' ? 'Editar Promoción' : 'Edit Promotion')
+                      : (language === 'es' ? 'Nueva Promoción' : 'New Promotion')
+                    }
+                  </DialogTitle>
+                </DialogHeader>
+                <PromotionForm
+                  promotion={editingPromo}
+                  onSave={savePromotion}
+                  onCancel={() => { setPromoModalOpen(false); setEditingPromo(null); }}
+                  language={language}
+                />
+              </DialogContent>
+            </Dialog>
+          </div>
+        )}
+
         {/* Delete Confirmation Dialog */}
         <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
           <DialogContent>
@@ -1333,8 +1447,10 @@ export const AdminDashboard = () => {
                 onClick={() => {
                   if (deleteConfirm?.type === 'experience') {
                     deleteExperience(deleteConfirm.id);
-                  } else {
+                  } else if (deleteConfirm?.type === 'fleet') {
                     deleteFleet(deleteConfirm.id);
+                  } else if (deleteConfirm?.type === 'promotion') {
+                    deletePromotion(deleteConfirm.id);
                   }
                 }}
               >
