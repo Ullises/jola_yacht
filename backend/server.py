@@ -480,20 +480,81 @@ async def get_availability(date: str):
 @api_router.post("/reservations", response_model=Reservation)
 async def create_reservation(reservation: ReservationCreate):
     # Get experience or fleet pricing
-    total_price = 0.0
+    original_price = 0.0
+    item_type = None
+    item_id = None
     
     if reservation.experience_id:
         exp = await db.experiences.find_one({"id": reservation.experience_id}, {"_id": 0})
         if exp:
-            total_price = exp["price"] * reservation.guests
+            original_price = exp["price"] * reservation.guests
+            item_type = "experiences"
+            item_id = reservation.experience_id
     elif reservation.fleet_id:
         fleet_item = await db.fleet.find_one({"id": reservation.fleet_id}, {"_id": 0})
         if fleet_item:
-            total_price = fleet_item["price_per_hour"] * 2  # Default 2 hours
+            original_price = fleet_item["price_per_hour"] * 2  # Default 2 hours
+            item_type = "fleet"
+            item_id = reservation.fleet_id
+    
+    # Apply promotion/promo code if provided
+    total_price = original_price
+    discount_amount = 0.0
+    promotion_id = None
+    
+    if reservation.promo_code:
+        promo = await db.promotions.find_one({
+            "promo_code": reservation.promo_code.upper(),
+            "is_active": True,
+            "start_date": {"$lte": reservation.date},
+            "end_date": {"$gte": reservation.date}
+        }, {"_id": 0})
+        
+        if promo:
+            # Check if promo applies to this item
+            applies_to = promo.get('applies_to', 'all')
+            can_apply = False
+            
+            if applies_to == 'all':
+                can_apply = True
+            elif applies_to == item_type:
+                can_apply = True
+            elif applies_to == 'specific' and item_id in promo.get('specific_items', []):
+                can_apply = True
+            
+            if can_apply:
+                # Check requirements
+                if reservation.guests >= promo.get('min_guests', 1) and original_price >= promo.get('min_purchase', 0):
+                    total_price, discount_amount = calculate_discounted_price(original_price, promo)
+                    promotion_id = promo['id']
+                    
+                    # Increment usage count
+                    await db.promotions.update_one(
+                        {"id": promo['id']},
+                        {"$inc": {"current_uses": 1}}
+                    )
+    else:
+        # Check for automatic promotions (without promo code)
+        auto_promos = await get_active_promotions_for_date(reservation.date, item_type, item_id)
+        # Apply the best automatic promotion
+        best_discount = 0
+        for promo in auto_promos:
+            if promo.get('promo_code'):  # Skip code-based promos
+                continue
+            if reservation.guests >= promo.get('min_guests', 1) and original_price >= promo.get('min_purchase', 0):
+                _, discount = calculate_discounted_price(original_price, promo)
+                if discount > best_discount:
+                    best_discount = discount
+                    total_price = original_price - discount
+                    discount_amount = discount
+                    promotion_id = promo['id']
     
     res_obj = Reservation(
         **reservation.model_dump(),
-        total_price=total_price
+        original_price=original_price,
+        discount_amount=discount_amount,
+        total_price=total_price,
+        promotion_id=promotion_id
     )
     
     doc = res_obj.model_dump()
