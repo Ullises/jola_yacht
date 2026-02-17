@@ -204,6 +204,51 @@ class FAQCreate(BaseModel):
     answer_en: str
     order: int = 0
 
+class Promotion(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name_es: str
+    name_en: str
+    description_es: str
+    description_en: str
+    discount_type: str = "percentage"  # percentage, fixed_amount
+    discount_value: float  # percentage (0-100) or fixed amount in MXN
+    promo_code: Optional[str] = None  # optional promo code
+    season_type: str = "custom"  # holiday, seasonal, weekend, custom
+    holiday_name: Optional[str] = None  # valentine, christmas, new_year, spring_break, summer, etc.
+    start_date: str  # YYYY-MM-DD
+    end_date: str  # YYYY-MM-DD
+    applies_to: str = "all"  # all, experiences, fleet, specific
+    specific_items: List[str] = []  # list of experience/fleet IDs if applies_to == "specific"
+    min_guests: int = 1
+    min_purchase: float = 0  # minimum purchase amount
+    max_uses: Optional[int] = None  # max number of times this promo can be used
+    current_uses: int = 0
+    is_active: bool = True
+    banner_image: Optional[str] = None
+    badge_color: str = "#FF7F50"  # color for the promotion badge
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class PromotionCreate(BaseModel):
+    name_es: str
+    name_en: str
+    description_es: str
+    description_en: str
+    discount_type: str = "percentage"
+    discount_value: float
+    promo_code: Optional[str] = None
+    season_type: str = "custom"
+    holiday_name: Optional[str] = None
+    start_date: str
+    end_date: str
+    applies_to: str = "all"
+    specific_items: List[str] = []
+    min_guests: int = 1
+    min_purchase: float = 0
+    max_uses: Optional[int] = None
+    banner_image: Optional[str] = None
+    badge_color: str = "#FF7F50"
+
 # ==================== HELPERS ====================
 
 def create_token(email: str) -> str:
