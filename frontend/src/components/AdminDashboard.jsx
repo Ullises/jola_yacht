@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { 
   LayoutDashboard, Ship, Compass, Calendar, 
   LogOut, Plus, Edit, Trash2, Users, DollarSign, TrendingUp,
-  Menu, X, Save, ImagePlus
+  Menu, X, Save, Tag, Percent, Gift, Power
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
 import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 import { toast } from 'sonner';
 import axios from 'axios';
 
