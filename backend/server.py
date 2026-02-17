@@ -389,6 +389,67 @@ async def get_faqs():
     faqs = await db.faqs.find({"is_active": True}, {"_id": 0}).sort("order", 1).to_list(50)
     return faqs
 
+# Promotions (Public)
+@api_router.get("/promotions/active")
+async def get_active_promotions(date: Optional[str] = None):
+    """Get all currently active promotions"""
+    today = date or datetime.now(timezone.utc).strftime('%Y-%m-%d')
+    
+    promotions = await db.promotions.find({
+        "is_active": True,
+        "start_date": {"$lte": today},
+        "end_date": {"$gte": today}
+    }, {"_id": 0}).to_list(50)
+    
+    # Filter out maxed out promotions
+    active = []
+    for promo in promotions:
+        if promo.get('max_uses') and promo.get('current_uses', 0) >= promo['max_uses']:
+            continue
+        active.append(promo)
+    
+    return active
+
+@api_router.get("/promotions/check/{date}")
+async def check_promotions_for_date(date: str, item_type: Optional[str] = None, item_id: Optional[str] = None):
+    """Check what promotions apply for a specific date and optionally an item"""
+    promotions = await get_active_promotions_for_date(date, item_type, item_id)
+    return {"date": date, "promotions": promotions}
+
+@api_router.post("/promotions/validate-code")
+async def validate_promo_code(code: str, date: str, amount: float, guests: int = 1):
+    """Validate a promo code and return discount info"""
+    promo = await db.promotions.find_one({
+        "promo_code": code.upper(),
+        "is_active": True,
+        "start_date": {"$lte": date},
+        "end_date": {"$gte": date}
+    }, {"_id": 0})
+    
+    if not promo:
+        raise HTTPException(status_code=404, detail="Invalid or expired promo code")
+    
+    # Check max uses
+    if promo.get('max_uses') and promo.get('current_uses', 0) >= promo['max_uses']:
+        raise HTTPException(status_code=400, detail="This promo code has reached its maximum uses")
+    
+    # Check minimum requirements
+    if guests < promo.get('min_guests', 1):
+        raise HTTPException(status_code=400, detail=f"Minimum {promo['min_guests']} guests required")
+    
+    if amount < promo.get('min_purchase', 0):
+        raise HTTPException(status_code=400, detail=f"Minimum purchase of ${promo['min_purchase']} MXN required")
+    
+    discounted_price, discount_amount = calculate_discounted_price(amount, promo)
+    
+    return {
+        "valid": True,
+        "promotion": promo,
+        "original_price": amount,
+        "discount_amount": discount_amount,
+        "final_price": discounted_price
+    }
+
 # Availability
 @api_router.get("/availability/{date}")
 async def get_availability(date: str):
