@@ -334,6 +334,104 @@ def calculate_discounted_price(original_price: float, promotion: dict) -> tuple:
     discounted_price = max(0, original_price - discount_amount)
     return (discounted_price, discount_amount)
 
+# PayPal Helper Functions
+async def get_paypal_access_token():
+    """Get PayPal OAuth access token"""
+    if not PAYPAL_CLIENT_ID or not PAYPAL_SECRET:
+        raise HTTPException(status_code=500, detail="PayPal credentials not configured")
+    
+    auth = base64.b64encode(f"{PAYPAL_CLIENT_ID}:{PAYPAL_SECRET}".encode()).decode()
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{PAYPAL_API_URL}/v1/oauth2/token",
+            headers={
+                "Authorization": f"Basic {auth}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            data="grant_type=client_credentials"
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to get PayPal access token")
+        
+        return response.json()["access_token"]
+
+async def create_paypal_order(amount: float, currency: str, reservation_id: str, return_url: str, cancel_url: str):
+    """Create a PayPal order"""
+    access_token = await get_paypal_access_token()
+    
+    order_data = {
+        "intent": "CAPTURE",
+        "purchase_units": [{
+            "reference_id": reservation_id,
+            "amount": {
+                "currency_code": currency.upper(),
+                "value": f"{amount:.2f}"
+            },
+            "description": f"Jola Yacht Reservation - {reservation_id[:8]}"
+        }],
+        "application_context": {
+            "return_url": return_url,
+            "cancel_url": cancel_url,
+            "brand_name": "Jola Yacht",
+            "landing_page": "BILLING",
+            "user_action": "PAY_NOW"
+        }
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{PAYPAL_API_URL}/v2/checkout/orders",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            },
+            json=order_data
+        )
+        
+        if response.status_code not in [200, 201]:
+            logging.error(f"PayPal order creation failed: {response.text}")
+            raise HTTPException(status_code=500, detail="Failed to create PayPal order")
+        
+        return response.json()
+
+async def capture_paypal_order(order_id: str):
+    """Capture a PayPal order after approval"""
+    access_token = await get_paypal_access_token()
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"{PAYPAL_API_URL}/v2/checkout/orders/{order_id}/capture",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Content-Type": "application/json"
+            }
+        )
+        
+        if response.status_code not in [200, 201]:
+            logging.error(f"PayPal capture failed: {response.text}")
+            raise HTTPException(status_code=500, detail="Failed to capture PayPal payment")
+        
+        return response.json()
+
+async def get_paypal_order_details(order_id: str):
+    """Get PayPal order details"""
+    access_token = await get_paypal_access_token()
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"{PAYPAL_API_URL}/v2/checkout/orders/{order_id}",
+            headers={
+                "Authorization": f"Bearer {access_token}"
+            }
+        )
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=500, detail="Failed to get PayPal order details")
+        
+        return response.json()
+
 # ==================== PUBLIC ROUTES ====================
 
 @api_router.get("/")
