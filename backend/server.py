@@ -199,6 +199,7 @@ class TokenResponse(BaseModel):
 class CheckoutRequest(BaseModel):
     reservation_id: str
     origin_url: str
+    payment_method: str = "stripe"  # stripe or paypal
 
 class FAQ(BaseModel):
     model_config = ConfigDict(extra="ignore")
