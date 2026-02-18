@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { Calendar, Clock, Users, ChevronLeft, Star, CheckCircle, Minus, Plus } from 'lucide-react';
+import { Calendar, Clock, Users, ChevronLeft, Star, CheckCircle, Minus, Plus, CreditCard } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -14,6 +14,13 @@ import axios from 'axios';
 import { toast } from 'sonner';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+
+// PayPal SVG Icon
+const PayPalIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+    <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797H9.6c-.52 0-.968.386-1.05.904l-1.12 7.106a.544.544 0 0 1-.354.466z"/>
+  </svg>
+);
 
 export const BookingPage = () => {
   const { experienceId, fleetId } = useParams();
@@ -29,6 +36,7 @@ export const BookingPage = () => {
   const [timeSlot, setTimeSlot] = useState('');
   const [availableSlots, setAvailableSlots] = useState([]);
   const [guests, setGuests] = useState(2);
+  const [paymentMethod, setPaymentMethod] = useState('stripe');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -105,13 +113,14 @@ export const BookingPage = () => {
       const resResponse = await axios.post(`${API}/reservations`, reservationData);
       const reservation = resResponse.data;
 
-      // Create checkout session
+      // Create checkout session with selected payment method
       const checkoutResponse = await axios.post(`${API}/checkout/session`, {
         reservation_id: reservation.id,
-        origin_url: window.location.origin
+        origin_url: window.location.origin,
+        payment_method: paymentMethod
       });
 
-      // Redirect to Stripe
+      // Redirect to payment provider
       window.location.href = checkoutResponse.data.url;
 
     } catch (error) {
