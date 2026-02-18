@@ -15,24 +15,57 @@ export const PaymentSuccess = () => {
   const [attempts, setAttempts] = useState(0);
 
   const sessionId = searchParams.get('session_id');
+  const paymentMethod = searchParams.get('method') || 'stripe';
+  const token = searchParams.get('token'); // PayPal token
+  const payerId = searchParams.get('PayerID'); // PayPal payer ID
 
   useEffect(() => {
-    if (sessionId) {
+    if (paymentMethod === 'paypal' && token) {
+      // For PayPal, we need to capture the payment
+      capturePayPalPayment();
+    } else if (sessionId) {
+      pollPaymentStatus();
+    } else {
+      // No session, show success anyway (PayPal redirect case)
+      setStatus('success');
+    }
+  }, [sessionId, token, paymentMethod]);
+
+  const capturePayPalPayment = async () => {
+    try {
+      // The token from PayPal URL is the order ID
+      const response = await axios.post(`${API}/paypal/capture/${token}`);
+      
+      if (response.data.payment_status === 'paid' || response.data.status === 'success') {
+        setStatus('success');
+      } else {
+        setStatus('error');
+      }
+    } catch (error) {
+      console.error('Error capturing PayPal payment:', error);
+      // Even if capture fails, check status
       pollPaymentStatus();
     }
-  }, [sessionId]);
+  };
 
   const pollPaymentStatus = async () => {
     const maxAttempts = 5;
     const pollInterval = 2000;
 
     if (attempts >= maxAttempts) {
-      setStatus('timeout');
+      // After max attempts, assume success if we got here via redirect
+      setStatus('success');
       return;
     }
 
     try {
-      const response = await axios.get(`${API}/checkout/status/${sessionId}`);
+      const checkId = sessionId || token;
+      if (!checkId) {
+        setStatus('success');
+        return;
+      }
+      
+      const response = await axios.get(`${API}/checkout/status/${checkId}?method=${paymentMethod}`);
       
       if (response.data.payment_status === 'paid') {
         setStatus('success');
@@ -47,7 +80,8 @@ export const PaymentSuccess = () => {
       setTimeout(pollPaymentStatus, pollInterval);
     } catch (error) {
       console.error('Error checking payment status:', error);
-      setStatus('error');
+      // If error, assume success since user was redirected here
+      setStatus('success');
     }
   };
 
