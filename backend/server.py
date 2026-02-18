@@ -687,82 +687,193 @@ async def create_checkout_session(request: CheckoutRequest, http_request: Reques
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     
-    # Setup Stripe
-    api_key = os.environ.get('STRIPE_API_KEY')
     host_url = request.origin_url
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
-    
-    # Create checkout session
-    success_url = f"{host_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}"
+    success_url = f"{host_url}/payment/success?session_id={{CHECKOUT_SESSION_ID}}&method={request.payment_method}"
     cancel_url = f"{host_url}/payment/cancel"
     
-    checkout_request = CheckoutSessionRequest(
-        amount=float(reservation["total_price"]),
-        currency="mxn",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "reservation_id": request.reservation_id,
-            "customer_email": reservation["customer_email"]
-        }
-    )
+    if request.payment_method == "paypal":
+        # PayPal checkout
+        paypal_success_url = f"{host_url}/payment/success?method=paypal"
+        paypal_cancel_url = f"{host_url}/payment/cancel"
+        
+        order = await create_paypal_order(
+            amount=float(reservation["total_price"]),
+            currency="MXN",
+            reservation_id=request.reservation_id,
+            return_url=paypal_success_url,
+            cancel_url=paypal_cancel_url
+        )
+        
+        # Find the approval link
+        approval_url = None
+        for link in order.get("links", []):
+            if link["rel"] == "approve":
+                approval_url = link["href"]
+                break
+        
+        if not approval_url:
+            raise HTTPException(status_code=500, detail="Failed to get PayPal approval URL")
+        
+        # Create payment transaction record
+        transaction = PaymentTransaction(
+            session_id=order["id"],
+            reservation_id=request.reservation_id,
+            amount=float(reservation["total_price"]),
+            currency="mxn",
+            status="initiated",
+            payment_status="pending",
+            metadata={"reservation_id": request.reservation_id, "payment_method": "paypal"}
+        )
+        
+        tx_doc = transaction.model_dump()
+        tx_doc['created_at'] = tx_doc['created_at'].isoformat()
+        await db.payment_transactions.insert_one(tx_doc)
+        
+        # Update reservation with session ID
+        await db.reservations.update_one(
+            {"id": request.reservation_id},
+            {"$set": {"payment_session_id": order["id"]}}
+        )
+        
+        return {"url": approval_url, "session_id": order["id"], "method": "paypal"}
     
-    session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
-    
-    # Create payment transaction record
-    transaction = PaymentTransaction(
-        session_id=session.session_id,
-        reservation_id=request.reservation_id,
-        amount=float(reservation["total_price"]),
-        currency="mxn",
-        status="initiated",
-        payment_status="pending",
-        metadata={"reservation_id": request.reservation_id}
-    )
-    
-    tx_doc = transaction.model_dump()
-    tx_doc['created_at'] = tx_doc['created_at'].isoformat()
-    await db.payment_transactions.insert_one(tx_doc)
-    
-    # Update reservation with session ID
-    await db.reservations.update_one(
-        {"id": request.reservation_id},
-        {"$set": {"payment_session_id": session.session_id}}
-    )
-    
-    return {"url": session.url, "session_id": session.session_id}
+    else:
+        # Stripe checkout (default)
+        api_key = os.environ.get('STRIPE_API_KEY')
+        webhook_url = f"{host_url}/api/webhook/stripe"
+        
+        stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
+        
+        checkout_request = CheckoutSessionRequest(
+            amount=float(reservation["total_price"]),
+            currency="mxn",
+            success_url=success_url.replace("{CHECKOUT_SESSION_ID}", "{CHECKOUT_SESSION_ID}"),
+            cancel_url=cancel_url,
+            metadata={
+                "reservation_id": request.reservation_id,
+                "customer_email": reservation["customer_email"]
+            }
+        )
+        
+        session: CheckoutSessionResponse = await stripe_checkout.create_checkout_session(checkout_request)
+        
+        # Create payment transaction record
+        transaction = PaymentTransaction(
+            session_id=session.session_id,
+            reservation_id=request.reservation_id,
+            amount=float(reservation["total_price"]),
+            currency="mxn",
+            status="initiated",
+            payment_status="pending",
+            metadata={"reservation_id": request.reservation_id, "payment_method": "stripe"}
+        )
+        
+        tx_doc = transaction.model_dump()
+        tx_doc['created_at'] = tx_doc['created_at'].isoformat()
+        await db.payment_transactions.insert_one(tx_doc)
+        
+        # Update reservation with session ID
+        await db.reservations.update_one(
+            {"id": request.reservation_id},
+            {"$set": {"payment_session_id": session.session_id}}
+        )
+        
+        return {"url": session.url, "session_id": session.session_id, "method": "stripe"}
 
 @api_router.get("/checkout/status/{session_id}")
-async def get_checkout_status(session_id: str):
-    api_key = os.environ.get('STRIPE_API_KEY')
-    stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+async def get_checkout_status(session_id: str, method: str = "stripe"):
+    if method == "paypal":
+        # PayPal status check
+        try:
+            order = await get_paypal_order_details(session_id)
+            status = order.get("status", "UNKNOWN")
+            
+            if status == "COMPLETED":
+                # Update transaction and reservation
+                tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+                if tx and tx.get("payment_status") != "paid":
+                    await db.payment_transactions.update_one(
+                        {"session_id": session_id},
+                        {"$set": {"status": "completed", "payment_status": "paid"}}
+                    )
+                    await db.reservations.update_one(
+                        {"payment_session_id": session_id},
+                        {"$set": {"status": "confirmed", "payment_status": "paid"}}
+                    )
+                
+                return {
+                    "status": "complete",
+                    "payment_status": "paid",
+                    "amount_total": order.get("purchase_units", [{}])[0].get("amount", {}).get("value"),
+                    "currency": "mxn"
+                }
+            elif status == "APPROVED":
+                return {
+                    "status": "approved",
+                    "payment_status": "pending_capture",
+                    "amount_total": order.get("purchase_units", [{}])[0].get("amount", {}).get("value"),
+                    "currency": "mxn"
+                }
+            else:
+                return {
+                    "status": status.lower(),
+                    "payment_status": "pending",
+                    "amount_total": None,
+                    "currency": "mxn"
+                }
+        except Exception as e:
+            logging.error(f"PayPal status check error: {e}")
+            return {"status": "error", "payment_status": "unknown"}
     
-    status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
-    
-    # Update transaction and reservation if paid
-    if status.payment_status == "paid":
-        # Check if already processed
-        tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
-        if tx and tx.get("payment_status") != "paid":
+    else:
+        # Stripe status check
+        api_key = os.environ.get('STRIPE_API_KEY')
+        stripe_checkout = StripeCheckout(api_key=api_key, webhook_url="")
+        
+        status: CheckoutStatusResponse = await stripe_checkout.get_checkout_status(session_id)
+        
+        if status.payment_status == "paid":
+            tx = await db.payment_transactions.find_one({"session_id": session_id}, {"_id": 0})
+            if tx and tx.get("payment_status") != "paid":
+                await db.payment_transactions.update_one(
+                    {"session_id": session_id},
+                    {"$set": {"status": "completed", "payment_status": "paid"}}
+                )
+                await db.reservations.update_one(
+                    {"payment_session_id": session_id},
+                    {"$set": {"status": "confirmed", "payment_status": "paid"}}
+                )
+        
+        return {
+            "status": status.status,
+            "payment_status": status.payment_status,
+            "amount_total": status.amount_total,
+            "currency": status.currency
+        }
+
+# PayPal capture endpoint (called after user approves payment)
+@api_router.post("/paypal/capture/{order_id}")
+async def capture_paypal_payment(order_id: str):
+    try:
+        result = await capture_paypal_order(order_id)
+        
+        if result.get("status") == "COMPLETED":
+            # Update transaction and reservation
             await db.payment_transactions.update_one(
-                {"session_id": session_id},
+                {"session_id": order_id},
                 {"$set": {"status": "completed", "payment_status": "paid"}}
             )
-            
-            # Update reservation
             await db.reservations.update_one(
-                {"payment_session_id": session_id},
+                {"payment_session_id": order_id},
                 {"$set": {"status": "confirmed", "payment_status": "paid"}}
             )
-    
-    return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "amount_total": status.amount_total,
-        "currency": status.currency
-    }
+            
+            return {"status": "success", "payment_status": "paid"}
+        else:
+            return {"status": "pending", "payment_status": result.get("status")}
+    except Exception as e:
+        logging.error(f"PayPal capture error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
