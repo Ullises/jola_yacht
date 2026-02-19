@@ -63,7 +63,7 @@ Design and develop a modern, high-end tourism booking website inspired by Viator
 - None currently
 
 ### P1 - High Priority
-- [ ] PayPal payment integration (user requested)
+- [x] PayPal payment integration (February 2025)
 - [x] Admin CRUD forms for adding/editing experiences and fleet (December 2025)
 - [ ] Real WhatsApp Business number integration
 
