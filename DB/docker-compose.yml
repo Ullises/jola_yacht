@@ -1,0 +1,29 @@
+# docker-compose.db.yml (o tu archivo actual)
+version: '3.8'
+services:
+  db-jolayacht:
+    image: mysql:8
+    env_file:
+      - .env
+    volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - jolayacht-net
+
+  adminer-jolayacht-db:
+    image: adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - jolayacht-net
+
+volumes:
+  mysql_data:
+
+networks:
+  jolayacht-net:
+    name: jolayacht-net
+    driver: bridge

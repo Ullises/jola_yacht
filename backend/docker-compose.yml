@@ -1,0 +1,51 @@
+services:
+  db-jolayacht:
+    image: postgres:16
+    container_name: jolayacht-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    networks:
+      - jolayacht-net
+
+  backend:
+    build:
+      dockerfile: dockerfile
+    container_name: jolayacht-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      - db-jolayacht
+    ports:
+      - "5010:5010"
+    networks:
+      - jolayacht-net
+
+  adminer:
+    image: adminer
+    container_name: jolayacht-adminer
+    restart: unless-stopped
+    depends_on:
+      - db-jolayacht
+    ports:
+      - "8081:8080"
+    networks:
+      - jolayacht-net
+
+volumes:
+  postgres_data:
+
+networks:
+  jolayacht-net:
+    driver: bridge

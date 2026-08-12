@@ -1,0 +1,32 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+venv/
+__pycache__/
+*.pyc
+
+# Build output
+dist/
+build/
+*.zip
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS/editor junk
+.DS_Store
+Thumbs.db
+*.Zone.Identifier
+
+# Docker
+DB/pgdata/
+*.pid
+
+# IDE (optional — many people commit shared VS Code settings, skip if you want to keep them)
+.vscode/
+.idea/
