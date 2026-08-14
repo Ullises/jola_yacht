@@ -21,7 +21,7 @@ npm-debug.log*
 # OS/editor junk
 .DS_Store
 Thumbs.db
-*.Zone.Identifier
+*:Zone.Identifier
 
 # Docker
 DB/pgdata/
