@@ -1,4 +1,4 @@
-# Pepetoys Backend API
+# Jola Yacht Backend API
 
 API REST para la reserva de motos acuaticas y yates desarrollada con FastAPI y MySQL.
 
