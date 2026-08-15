@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/assets/logo.png" alt="Jola Yacht logo" width="180" />
+</p>
+
 # Jola Yacht
 
 Booking site for water activities (yacht, jetski, and waverunner rentals and experiences), Cancún-style, bilingual (Spanish/English).
